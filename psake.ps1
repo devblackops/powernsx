@@ -25,7 +25,7 @@ task Init {
     Import-Module $modules -Verbose:$false -Force
 }
 
-task Test -Depends Init, Analyze, Pester-Meta, Pester-Module
+task Test -Depends Init, Analyze, Pester-Meta, Pester-Unit, Pester-Integration
 
 task Analyze -Depends Init {
     $saResults = Get-ChildItem -File -Path $sut -Exclude '*.tests.ps1' -Recurse | 
@@ -46,11 +46,11 @@ task Pester-Meta -Depends Init {
     $testResults = Invoke-Pester -Path $metaTests -PassThru
     if ($testResults.FailedCount -gt 0) {
         $testResults | Format-List
-        Write-Error -Message 'One or more Pester tests failed. Build cannot continue!'
+        Write-Error -Message 'One or more Pester meta tests failed. Build cannot continue!'
     }
 }
 
-task Pester-Module -depends Init {
+task Pester-Unit -depends Init {
     if(-not $ENV:BHProjectPath) {
         Set-BuildEnvironment -Path $PSScriptRoot\..
     }
@@ -60,7 +60,22 @@ task Pester-Module -depends Init {
     $testResults = Invoke-Pester -Path $unitTests -PassThru
     if ($testResults.FailedCount -gt 0) {
         $testResults | Format-List
-        Write-Error -Message 'One or more Pester tests failed. Build cannot continue!'
+        Write-Error -Message 'One or more Pester tests unit failed. Build cannot continue!'
+    }
+    Remove-Module $ENV:BHProjectName -ErrorAction SilentlyContinue
+}
+
+task Pester-Integration -depends Init {
+    if(-not $ENV:BHProjectPath) {
+        Set-BuildEnvironment -Path $PSScriptRoot\..
+    }
+    Remove-Module $ENV:BHProjectName -ErrorAction SilentlyContinue
+    Import-Module (Join-Path $ENV:BHProjectPath $ENV:BHProjectName) -Force
+
+    $testResults = Invoke-Pester -Path $integrationTests -PassThru
+    if ($testResults.FailedCount -gt 0) {
+        $testResults | Format-List
+        Write-Error -Message 'One or more Pester integration tests failed. Build cannot continue!'
     }
     Remove-Module $ENV:BHProjectName -ErrorAction SilentlyContinue
 }
