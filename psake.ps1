@@ -20,8 +20,8 @@ task Init {
     "Build System Details:"
     Get-Item ENV:BH*
 
-    $modules = 'Pester', 'PSDeploy', 'PSScriptAnalyzer'
-    Install-Module $modules -Confirm:$false
+    $modules = 'Pester', 'PSScriptAnalyzer'
+    Install-Module $modules -Repository PSGallery -Confirm:$false
     Import-Module $modules -Verbose:$false -Force
 }
 
